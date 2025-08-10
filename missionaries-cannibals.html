@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Missionaries & Cannibals — Fixed</title>
+<style>
+  :root {
+    --w: 880px;
+    --h: 420px;
+    --bank-w: 220px;
+    --accent: #3aa0ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    background: linear-gradient(180deg,#cfeffd,#efe3ff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+  }
+
+  .wrap{
+    width:var(--w);
+    max-width:95%;
+  }
+
+  h1{
+    text-align:center;
+    font-size:18px;
+    margin:10px 0 16px;
+    color:#0b3a4a;
+  }
+
+  .board{
+    width:var(--w);
+    height:var(--h);
+    max-width:100%;
+    margin:0 auto;
+    border-radius:10px;
+    overflow:hidden;
+    border:2px solid rgba(0,0,0,0.25);
+    position:relative;
+    display:flex;
+    gap:0;
+    background:transparent;
+  }
+
+  /* water (base layer) */
+  .river{
+    flex:1;
+    background: linear-gradient(180deg,#66c2ff 0%, #2bb7ff 40%, #70e6ff 100%);
+    position:relative;
+    z-index:0; /* lowest */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  /* subtle wave overlay so water feels "above" banks visually */
+  .river::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: radial-gradient(circle at 10% 10%, rgba(255,255,255,0.04), transparent 15%);
+    pointer-events:none;
+    mix-blend-mode: overlay;
+  }
+
+  /* bank panels (above water) */
+  .bank{
+    width:var(--bank-w);
+    background:#8fcf8c;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:18px 12px;
+    gap:10px;
+    z-index:2; /* above water */
+    position:relative;
+  }
+  .bank .title{
+    font-weight:700;
+    color:#083a23;
+    margin-bottom:6px;
+  }
+  .people{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    width:100%;
+  }
+
+  /* boat (above water) */
+  .boat{
+    position:absolute;
+    width:120px;
+    height:54px;
+    border-radius:10px;
+    background: linear-gradient(180deg,#7a4b2b,#8e5a3a);
+    bottom:86px;
+    left: calc( (var(--bank-w) + 40px) ); /* initial near-left */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:4; /* above banks and water */
+    transition:left 700ms cubic-bezier(.22,.9,.3,1), transform 250ms;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    padding:6px;
+    cursor:pointer;
+  }
+  .boat:active{ transform: translateY(2px) }
+
+  .deck{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+  }
+
+  /* people visuals */
+  .person{
+    width:48px;
+    height:48px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    cursor:pointer;
+    user-select:none;
+    box-shadow:0 6px 12px rgba(2,12,20,0.12);
+  }
+  .person.m{ background:linear-gradient(#ffffff,#e9f3ff); color:#0e3744; }
+  .person.c{ background:linear-gradient(#ffdede,#ffb6b6); color:#4a0505; }
+
+  /* smaller passengers in boat */
+  .deck .person{ width:40px; height:40px; font-size:20px; border-radius:8px; box-shadow:0 6px 10px rgba(0,0,0,0.18) }
+
+  /* controls + status */
+  .controls{ margin-top:12px; text-align:center; display:flex; gap:10px; justify-content:center; align-items:center; }
+  button{
+    background:#2f9a44;color:#fff;border:0;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer;
+  }
+  button.ghost{ background:transparent;color:#123;border:1px solid rgba(0,0,0,0.12) }
+  .status{ color:#083a23; font-weight:700 }
+  .muted{ color:#095; font-size:13px; opacity:0.8 }
+
+  /* responsive */
+  @media (max-width:720px){
+    .board{ height:480px; flex-direction:column; gap:10px; }
+    .bank{ width:100%; flex-direction:row; justify-content:space-between; padding:12px; }
+    .river{ order:2; height:220px }
+    .boat{ bottom:150px; left:50%; transform:translateX(-50%); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Missionaries and Cannibals</h1>
+
+    <div class="board" id="board">
+      <div class="bank" id="leftBank">
+        <div class="title">Left Bank</div>
+        <div class="people" id="leftPeople"></div>
+      </div>
+
+      <div class="river" id="river">
+        <!-- boat sits above the river, absolute inside board -->
+        <div class="boat" id="boat" title="Click boat to move">
+          <div class="deck" id="deck"></div>
+        </div>
+      </div>
+
+      <div class="bank" id="rightBank">
+        <div class="title">Right Bank</div>
+        <div class="people" id="rightPeople"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="resetBtn">Restart</button>
+      <button id="moveBtn">Move Boat</button>
+      <div class="status" id="status">Boat: Left</div>
+    </div>
+  </div>
+
+<script>
+/* Clean single-file implementation.
+   Key fix: people are DOM children of banks (not absolutely positioned),
+   water is the bottom layer (z-index:0), banks and boat have higher z-index.
+*/
+
+const leftPeopleEl = document.getElementById('leftPeople');
+const rightPeopleEl = document.getElementById('rightPeople');
+const deckEl = document.getElementById('deck');
+const boatEl = document.getElementById('boat');
+const moveBtn = document.getElementById('moveBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusEl = document.getElementById('status');
+
+let leftSide = [ {t:'M', i:'🙂'}, {t:'M', i:'🙂'}, {t:'M', i:'🙂'}, {t:'C', i:'😈'}, {t:'C', i:'😈'}, {t:'C', i:'😈'} ];
+let rightSide = [];
+let boatPassengers = []; // array of objects {t:'M'|'C', i:icon}
+let boatSide = 'left'; // 'left' or 'right'
+const BOAT_LEFT = 'left';
+const BOAT_RIGHT = 'right';
+const TRANS_MS = 700;
+
+function createPersonEl(person, source, idx) {
+  // source: 'left','right','boat'
+  const d = document.createElement('div');
+  d.className = 'person ' + (person.t === 'M' ? 'm' : 'c');
+  d.innerText = person.i;
+  d.title = person.t === 'M' ? 'Missionary' : 'Cannibal';
+  d.onclick = (e) => {
+    e.stopPropagation();
+    // Clicking on a person: if on same bank as boat and boat has space -> load
+    if (source === 'left' && boatSide === BOAT_LEFT) {
+      if (boatPassengers.length < 2) {
+        boatPassengers.push(leftSide.splice(idx,1)[0]);
+        render();
+      } else {
+        flash('Boat full (max 2)');
+      }
+    } else if (source === 'right' && boatSide === BOAT_RIGHT) {
+      if (boatPassengers.length < 2) {
+        boatPassengers.push(rightSide.splice(idx,1)[0]);
+        render();
+      } else {
+        flash('Boat full (max 2)');
+      }
+    } else if (source === 'boat') {
+      // remove from boat -> return to current bank
+      const p = boatPassengers.splice(idx,1)[0];
+      if (boatSide === BOAT_LEFT) leftSide.push(p);
+      else rightSide.push(p);
+      render();
+    } else {
+      // Not on same side as boat
+      flash('Person must be on same side as boat to board.');
+    }
+  };
+  return d;
+}
+
+function render() {
+  // clear
+  leftPeopleEl.innerHTML = '';
+  rightPeopleEl.innerHTML = '';
+  deckEl.innerHTML = '';
+
+  // left bank people (stack visually)
+  leftSide.forEach((p, i) => leftPeopleEl.appendChild(createPersonEl(p,'left', i)));
+
+  // right bank people
+  rightSide.forEach((p, i) => rightPeopleEl.appendChild(createPersonEl(p,'right', i)));
+
+  // boat passengers
+  boatPassengers.forEach((p,i) => deckEl.appendChild(createPersonEl(p,'boat', i)));
+
+  // position boat (simple percentages so it visually sits over river center-left or center-right)
+  // We'll set left position relative to the board so it doesn't go under banks.
+  const boardW = document.getElementById('board').clientWidth;
+  const bankW = document.getElementById('leftBank').clientWidth;
+  // compute left coordinate: slightly inside river area
+  if (boatSide === BOAT_LEFT) {
+    // 10% of river width from left bank
+    const leftX = bankW + Math.round((boardW - 2*bankW) * 0.10) - (boatEl.offsetWidth/2);
+    boatEl.style.left = leftX + 'px';
+    statusEl.textContent = 'Boat: Left';
+  } else {
+    const leftX = bankW + Math.round((boardW - 2*bankW) * 0.78) - (boatEl.offsetWidth/2);
+    boatEl.style.left = leftX + 'px';
+    statusEl.textContent = 'Boat: Right';
+  }
+
+  checkGameState();
+}
+
+function moveBoat() {
+  if (boatPassengers.length === 0) {
+    flash('Boat is empty — load 1 or 2 people.');
+    return;
+  }
+  // toggle side and animate
+  boatSide = (boatSide === BOAT_LEFT) ? BOAT_RIGHT : BOAT_LEFT;
+  // set new left value (render handles left)
+  render();
+  // after transition, unload passengers to the bank on arrival
+  setTimeout(() => {
+    if (boatSide === BOAT_LEFT) {
+      leftSide.push(...boatPassengers);
+    } else {
+      rightSide.push(...boatPassengers);
+    }
+    boatPassengers = [];
+    render();
+  }, TRANS_MS + 10);
+}
+
+function resetGame() {
+  leftSide = [ {t:'M', i:'🙂'}, {t:'M', i:'🙂'}, {t:'M', i:'🙂'}, {t:'C', i:'😈'}, {t:'C', i:'😈'}, {t:'C', i:'😈'} ];
+  rightSide = [];
+  boatPassengers = [];
+  boatSide = BOAT_LEFT;
+  render();
+}
+
+function counts(bankArray){
+  const m = bankArray.filter(x => x.t === 'M').length;
+  const c = bankArray.filter(x => x.t === 'C').length;
+  return {m,c};
+}
+
+let messageTimer = null;
+function flash(msg){
+  // show a short browser alert-like hint in the status area (brief)
+  const old = statusEl.textContent;
+  statusEl.textContent = msg;
+  if (messageTimer) clearTimeout(messageTimer);
+  messageTimer = setTimeout(()=> { statusEl.textContent = old; }, 1400);
+}
+
+function checkGameState(){
+  // lose if cannibals > missionaries on any bank where missionaries > 0
+  const left = counts(leftSide);
+  const right = counts(rightSide);
+  if ((left.m > 0 && left.c > left.m) || (right.m > 0 && right.c > right.m)) {
+    flash('You lose — cannibals outnumber missionaries!');
+    // simple disable (prevent more moves until reset)
+    moveBtn.disabled = true;
+    moveBtn.style.opacity = 0.6;
+    return;
+  }
+  // win when all are on right
+  if (rightSide.length === 6) {
+    flash('You win 🎉');
+    moveBtn.disabled = true;
+    moveBtn.style.opacity = 0.6;
+    return;
+  }
+  // else enable
+  moveBtn.disabled = false;
+  moveBtn.style.opacity = 1;
+}
+
+moveBtn.addEventListener('click', moveBoat);
+resetBtn.addEventListener('click', () => { resetGame(); moveBtn.disabled=false; moveBtn.style.opacity=1; });
+
+window.addEventListener('resize', render);
+
+// initial render
+resetGame();
+</script>
+</body>
+</html>
