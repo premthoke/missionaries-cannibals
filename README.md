@@ -47,7 +47,10 @@ Your mission: **Get everyone across safely.**
 ## 📸 Screenshots
 | Game Start | Mid Game | Victory |
 |------------|----------|---------|
-| ![Start](https://via.placeholder.com/250x150) | ![Mid](https://via.placeholder.com/250x150) | ![Win](https://via.placeholder.com/250x150) |
+| ![Start](<img width="1900" height="940" alt="Screenshot 2025-08-11 225930" src="https://github.com/user-attachments/assets/aa7f101b-92fb-447c-833e-6801a5b2b400" />
+) | ![Mid](<img width="1866" height="977" alt="Screenshot 2025-08-11 225843" src="https://github.com/user-attachments/assets/9ce0dc2b-c813-48ba-ad12-d8325fb15b2c" />
+) | ![Win](<img width="1900" height="966" alt="Screenshot 2025-08-11 225920" src="https://github.com/user-attachments/assets/20eb15c7-0c0a-474d-8302-8b57c5a21ca5" />
+) |
 
 ---
 
