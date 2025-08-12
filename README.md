@@ -4,11 +4,6 @@
 
 ---
 
-## 🌐 Live Project
-
-> 🚀 Play it here: [https://premthoke.github.io/missionaries-cannibals/](https://premthoke.github.io/missionaries-cannibals/)
-
----
 
 ## 🧠 About The Project
 
